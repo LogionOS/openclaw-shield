@@ -1,4 +1,5 @@
 import type { ShieldConfig, ComplianceAction, RiskLevel, MatchedRule, PIIItem } from "./config.js";
+import { validateApiEndpoint, requireTls, scrubForLog } from "./hardening.js";
 
 export interface CheckRequest {
   query: string;
@@ -48,10 +49,29 @@ export class LogionOSClient {
     this.endpoint = config.apiEndpoint.replace(/\/+$/, "");
     this.apiKey = config.apiKey;
     this.timeout = config.performance.deepCheckTimeout;
+
+    const validation = validateApiEndpoint(this.endpoint);
+    if (!validation.valid) {
+      throw new Error(`Shield: invalid API endpoint — ${validation.reason}`);
+    }
+
+    if (requireTls(this.endpoint, config.mode)) {
+      throw new Error(
+        "Shield: TLS required for non-localhost API endpoints in enforce/strict mode. " +
+        "Use https:// or set mode to 'monitor' for development.",
+      );
+    }
   }
 
   private async fetch<T>(path: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.endpoint}${path}`;
+
+    // Prevent open-redirect / path traversal in API path
+    const parsed = new URL(url);
+    if (!parsed.pathname.startsWith("/v1/")) {
+      throw new APIError(0, "Blocked: API path must start with /v1/", path);
+    }
+
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeout);
 
@@ -59,6 +79,7 @@ export class LogionOSClient {
       const res = await fetch(url, {
         ...options,
         signal: controller.signal,
+        redirect: "error",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${this.apiKey}`,

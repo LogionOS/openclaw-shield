@@ -10,6 +10,7 @@ import { SessionTracker } from "./audit/session-tracker.js";
 import { PolicySync } from "./policy/policy-sync.js";
 import { LocalCache } from "./policy/local-cache.js";
 import { registerDashboardRoutes } from "./dashboard/serve.js";
+import { heartbeat, isWatchdogHealthy, computeModuleHash, validateApiEndpoint } from "./hardening.js";
 
 interface PluginAPI {
   logger: { info: (...args: unknown[]) => void; warn: (...args: unknown[]) => void; error: (...args: unknown[]) => void };
@@ -67,12 +68,19 @@ class ShieldInstance {
     this.tool = new ToolGuard(config, this.client, this.audit);
   }
 
+  private watchdogInterval: ReturnType<typeof setInterval> | null = null;
+  moduleHash = "";
+
   async start(): Promise<void> {
     await this.audit.start();
     await this.policySync.start();
+
+    heartbeat();
+    this.watchdogInterval = setInterval(() => heartbeat(), 10_000);
   }
 
   async stop(): Promise<void> {
+    if (this.watchdogInterval) clearInterval(this.watchdogInterval);
     await this.audit.stop();
     await this.policySync.stop();
   }
@@ -81,6 +89,12 @@ class ShieldInstance {
 export default function register(api: PluginAPI) {
   const pluginConfig = resolveConfig(api.config);
   shield = new ShieldInstance(pluginConfig);
+
+  const endpointCheck = validateApiEndpoint(pluginConfig.apiEndpoint);
+  if (!endpointCheck.valid) {
+    api.logger.error(`[LogionOS Shield] FATAL: ${endpointCheck.reason}`);
+    return;
+  }
 
   api.logger.info("[LogionOS Shield] Initializing...");
   api.logger.info(`[LogionOS Shield] Mode: ${pluginConfig.mode}`);
@@ -92,8 +106,14 @@ export default function register(api: PluginAPI) {
     id: "logionos-shield",
     start: async () => {
       await shield!.start();
+      shield!.moduleHash = computeModuleHash(
+        JSON.stringify(pluginConfig.guards),
+        pluginConfig.mode,
+        pluginConfig.apiEndpoint,
+      );
       const healthy = await shield!.client.isHealthy();
       api.logger.info(`[LogionOS Shield] Started. API health: ${healthy ? "OK" : "UNREACHABLE"}`);
+      api.logger.info(`[LogionOS Shield] Module integrity: ${shield!.moduleHash}`);
     },
     stop: async () => {
       api.logger.info("[LogionOS Shield] Shutting down...");
@@ -104,6 +124,15 @@ export default function register(api: PluginAPI) {
   // ── Lifecycle: request.pre (Inbound Guard) ──────────────────
   if (pluginConfig.guards.inbound) {
     api.lifecycle.on("request.pre", async (ctx) => {
+      if (!isWatchdogHealthy()) {
+        api.logger.error("[LogionOS Shield] Watchdog timeout — fail-closed, blocking request");
+        return {
+          ...ctx,
+          blocked: true,
+          reply: "🔒 LogionOS Shield: Security subsystem unresponsive. Request blocked (fail-closed).",
+        };
+      }
+
       if (shield!.cache.isKillSwitchActive()) {
         return {
           ...ctx,

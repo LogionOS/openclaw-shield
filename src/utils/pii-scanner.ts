@@ -1,4 +1,5 @@
 import type { PIIItem } from "../config.js";
+import { normalizeInput, safeTruncate } from "../hardening.js";
 
 interface PIIPattern {
   type: string;
@@ -39,13 +40,16 @@ const BLOCKLIST_PATTERNS = [
   ]},
 ];
 
-export function scanPII(text: string): PIIItem[] {
+export function scanPII(rawText: string): PIIItem[] {
+  const text = safeTruncate(normalizeInput(rawText));
   const results: PIIItem[] = [];
 
   for (const { type, pattern, severity: _severity } of PII_PATTERNS) {
     const regex = new RegExp(pattern.source, pattern.flags);
     let match: RegExpExecArray | null;
+    let iterations = 0;
     while ((match = regex.exec(text)) !== null) {
+      if (++iterations > 500) break;
       const value = match[0];
       results.push({
         type,
@@ -59,7 +63,8 @@ export function scanPII(text: string): PIIItem[] {
   return deduplicateByLocation(results);
 }
 
-export function scanBlocklist(text: string): { category: string; matched: string }[] {
+export function scanBlocklist(rawText: string): { category: string; matched: string }[] {
+  const text = safeTruncate(normalizeInput(rawText));
   const hits: { category: string; matched: string }[] = [];
 
   for (const { category, patterns } of BLOCKLIST_PATTERNS) {
