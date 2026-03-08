@@ -37,6 +37,8 @@ const HIGH_RISK_TOOLS = new Set([
   "send_email", "send_message",
   "http_request", "fetch", "curl",
   "code_exec", "eval", "python_exec",
+  "wallet_send", "wallet_sign", "wallet_transfer",
+  "token_approve", "swap_exec", "bridge_transfer",
 ]);
 
 const DANGEROUS_ARG_PATTERNS = [
@@ -46,6 +48,10 @@ const DANGEROUS_ARG_PATTERNS = [
   { pattern: /(?:\/etc\/passwd|\/etc\/shadow|\.ssh\/|\.env)/i, reason: "sensitive_file_access" },
   { pattern: /(?:169\.254\.169\.254|metadata\.google)/i, reason: "cloud_metadata_access" },
   { pattern: /(?:curl|wget|fetch).*(?:\||>)/i, reason: "pipe_download_execution" },
+  { pattern: /(?:wallet\.dat|keystore\.json|\.keys|device\.json)/i, reason: "crypto_wallet_file_access" },
+  { pattern: /(?:export|dump|show)\s+(?:seed|mnemonic|private.?key)/i, reason: "crypto_key_exfiltration" },
+  { pattern: /(?:send|transfer|withdraw)\s+(?:all|funds|tokens|balance)/i, reason: "crypto_fund_transfer" },
+  { pattern: /(?:approve|sign)\s+(?:transaction|transfer|unlimited)/i, reason: "crypto_transaction_signing" },
 ];
 
 export class ToolGuard {
@@ -93,7 +99,7 @@ export class ToolGuard {
     }
 
     const piiInArgs = scanPII(argsStr);
-    if (piiInArgs.some((p) => ["SSN", "CREDIT_CARD", "PRIVATE_KEY", "AWS_KEY"].includes(p.type))) {
+    if (piiInArgs.some((p) => ["SSN", "CREDIT_CARD", "PRIVATE_KEY", "AWS_KEY", "SEED_PHRASE", "WIF_KEY", "XPRV_KEY", "HEX_SECRET_64"].includes(p.type))) {
       action = escalate(action, "FLAG");
       reasons.push(`pii_in_tool_args:${piiInArgs.map((p) => p.type).join(",")}`);
     } else if (piiInArgs.length > 0) {
@@ -152,7 +158,7 @@ export class ToolGuard {
     const reasons: string[] = [];
 
     const piiInResult = scanPII(event.toolResult);
-    if (piiInResult.some((p) => ["SSN", "CREDIT_CARD", "MY_NUMBER", "PRIVATE_KEY", "AWS_KEY"].includes(p.type))) {
+    if (piiInResult.some((p) => ["SSN", "CREDIT_CARD", "MY_NUMBER", "PRIVATE_KEY", "AWS_KEY", "SEED_PHRASE", "WIF_KEY", "XPRV_KEY", "HEX_SECRET_64", "ETH_ADDRESS", "BTC_ADDRESS"].includes(p.type))) {
       action = "FLAG";
       reasons.push(`pii_in_tool_result:${piiInResult.map((p) => p.type).join(",")}`);
     } else if (piiInResult.length > 0) {

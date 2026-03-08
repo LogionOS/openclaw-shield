@@ -20,6 +20,14 @@ const PII_PATTERNS: PIIPattern[] = [
   { type: "PRIVATE_KEY", pattern: /-----BEGIN (?:RSA |EC |DSA )?PRIVATE KEY-----/g, severity: "high" },
   { type: "PASSWORD", pattern: /(?:password|passwd|pwd)\s*[:=]\s*\S+/gi, severity: "high" },
   { type: "IP_ADDRESS", pattern: /\b(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\b/g, severity: "low" },
+  // Crypto wallet and key patterns
+  { type: "ETH_ADDRESS", pattern: /\b0x[a-fA-F0-9]{40}\b/g, severity: "high" },
+  { type: "BTC_ADDRESS", pattern: /\b(?:bc1|[13])[a-zA-HJ-NP-Z0-9]{25,62}\b/g, severity: "high" },
+  { type: "SOL_ADDRESS", pattern: /\b[1-9A-HJ-NP-Za-km-z]{32,44}\b/g, severity: "high" },
+  { type: "HEX_SECRET_64", pattern: /\b[0-9a-fA-F]{64}\b/g, severity: "high" },
+  { type: "SEED_PHRASE", pattern: /(?:seed|mnemonic|recovery|backup)\s*(?:phrase|words?)?\s*[:=]?\s*(?:[a-z]{3,8}\s+){11,23}[a-z]{3,8}/gi, severity: "high" },
+  { type: "WIF_KEY", pattern: /\b[5KL][1-9A-HJ-NP-Za-km-z]{50,51}\b/g, severity: "high" },
+  { type: "XPRV_KEY", pattern: /\bxprv[a-zA-Z0-9]{107,108}\b/g, severity: "high" },
 ];
 
 const BLOCKLIST_PATTERNS = [
@@ -37,6 +45,12 @@ const BLOCKLIST_PATTERNS = [
   { category: "harmful_content", patterns: [
     /how to (?:make|create|build|synthesize) (?:a )?(?:bomb|explosive|weapon)/i,
     /how to (?:hack|breach|exploit|attack) (?:a |an )?(?:system|server|network|database)/i,
+  ]},
+  { category: "crypto_exfiltration", patterns: [
+    /(?:send|transfer|withdraw|move)\s+(?:all|my|the)\s+(?:funds|tokens|coins|balance|crypto|eth|btc|sol|usdt|usdc)/i,
+    /(?:export|dump|show|print|read|get)\s+(?:my |the )?(?:seed|mnemonic|private.?key|keystore|wallet)/i,
+    /(?:wallet\.dat|keystore\.json|\.keys|device\.json|soul\.md)/i,
+    /(?:sign|approve)\s+(?:transaction|transfer|swap)\s+(?:to|for)\s+(?:0x|bc1)/i,
   ]},
 ];
 
@@ -93,6 +107,15 @@ export function maskValue(type: string, value: string): string {
   }
   if (type === "PHONE_US" || type === "PHONE_JP") {
     return `${"*".repeat(value.length - 4)}${value.slice(-4)}`;
+  }
+  if (type === "ETH_ADDRESS" || type === "BTC_ADDRESS" || type === "SOL_ADDRESS") {
+    return `${value.slice(0, 6)}..${value.slice(-4)}`;
+  }
+  if (type === "SEED_PHRASE") {
+    return "[REDACTED SEED PHRASE]";
+  }
+  if (type === "WIF_KEY" || type === "XPRV_KEY" || type === "HEX_SECRET_64") {
+    return `${value.slice(0, 4)}${"*".repeat(8)}`;
   }
   if (value.length > 8) {
     return `${value.slice(0, 4)}${"*".repeat(value.length - 8)}${value.slice(-4)}`;
