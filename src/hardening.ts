@@ -95,7 +95,41 @@ export function normalizeInput(text: string): string {
   let normalized = text.normalize("NFKC");
   normalized = normalized.replace(ZERO_WIDTH_CHARS, "");
   normalized = normalized.replace(INVISIBLE_CONTROL, "");
+  normalized = decodeObfuscatedContent(normalized);
   return normalized;
+}
+
+function decodeObfuscatedContent(text: string): string {
+  let result = text;
+
+  const b64Pattern = /(?:base64|b64|encoded)[\s:=]+([A-Za-z0-9+/]{20,}={0,2})/gi;
+  result = result.replace(b64Pattern, (_match, b64) => {
+    try {
+      const decoded = Buffer.from(b64, "base64").toString("utf-8");
+      if (/[\x20-\x7E]/.test(decoded)) return `${_match} [DECODED: ${decoded}]`;
+    } catch { /* not valid base64 */ }
+    return _match;
+  });
+
+  const hexPattern = /(?:hex|0x)[\s:=]+([0-9a-fA-F]{20,})/gi;
+  result = result.replace(hexPattern, (_match, hex) => {
+    try {
+      const decoded = Buffer.from(hex, "hex").toString("utf-8");
+      if (/[\x20-\x7E]/.test(decoded)) return `${_match} [DECODED: ${decoded}]`;
+    } catch { /* not valid hex */ }
+    return _match;
+  });
+
+  const rot13Pattern = /(?:rot13|rot-13|caesar)[\s:=]+([a-zA-Z\s]{10,})/gi;
+  result = result.replace(rot13Pattern, (_match, cipher) => {
+    const decoded = cipher.replace(/[a-zA-Z]/g, (c: string) => {
+      const base = c <= "Z" ? 65 : 97;
+      return String.fromCharCode(((c.charCodeAt(0) - base + 13) % 26) + base);
+    });
+    return `${_match} [DECODED: ${decoded}]`;
+  });
+
+  return result;
 }
 
 // ── ReDoS Protection ────────────────────────────────────────

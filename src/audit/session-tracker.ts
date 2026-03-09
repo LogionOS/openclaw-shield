@@ -15,6 +15,8 @@ interface SessionState {
   cumulativeRiskScore: number;
   highestAction: ComplianceAction;
   toolCalls: { name: string; allowed: boolean }[];
+  recentActions: { action: ComplianceAction; ts: number }[];
+  crescendoTriggered: boolean;
 }
 
 export interface SessionSummary {
@@ -68,6 +70,8 @@ export class SessionTracker {
         cumulativeRiskScore: 0,
         highestAction: "PASS",
         toolCalls: [],
+        recentActions: [],
+        crescendoTriggered: false,
       };
       this.sessions.set(sessionId, state);
     }
@@ -89,6 +93,37 @@ export class SessionTracker {
     if (actionOrder.indexOf(action) > actionOrder.indexOf(state.highestAction)) {
       state.highestAction = action;
     }
+
+    const now = Date.now();
+    state.recentActions.push({ action, ts: now });
+    const windowMs = 5 * 60_000;
+    state.recentActions = state.recentActions.filter((a) => now - a.ts < windowMs);
+  }
+
+  checkCrescendo(sessionId: string): { detected: boolean; reason: string } {
+    const state = this.sessions.get(sessionId);
+    if (!state || state.crescendoTriggered) {
+      return { detected: state?.crescendoTriggered ?? false, reason: state?.crescendoTriggered ? "already_triggered" : "" };
+    }
+
+    const suspicious = state.recentActions.filter((a) => a.action === "WARN" || a.action === "FLAG" || a.action === "BLOCK");
+
+    if (suspicious.length >= 5) {
+      state.crescendoTriggered = true;
+      return { detected: true, reason: `crescendo:${suspicious.length}_suspicious_in_5min` };
+    }
+
+    if (state.blockCount >= 2 && state.flagCount >= 1) {
+      state.crescendoTriggered = true;
+      return { detected: true, reason: `escalation:${state.blockCount}blocks_${state.flagCount}flags` };
+    }
+
+    if (state.piiDetections >= 3 && state.checkCount <= 10) {
+      state.crescendoTriggered = true;
+      return { detected: true, reason: `pii_probing:${state.piiDetections}_detections_in_${state.checkCount}_checks` };
+    }
+
+    return { detected: false, reason: "" };
   }
 
   recordToolCall(sessionId: string, toolName: string, allowed: boolean): void {

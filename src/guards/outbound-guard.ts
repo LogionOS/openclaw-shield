@@ -3,6 +3,7 @@ import type { LogionOSClient } from "../client.js";
 import type { AuditLogger } from "../audit/audit-logger.js";
 import { scanPII } from "../utils/pii-scanner.js";
 import { generateId } from "../utils/hash.js";
+import { checkCanaryLeak, checkPromptLeakage } from "../utils/canary.js";
 
 export interface OutboundEvent {
   response: string;
@@ -39,12 +40,23 @@ export class OutboundGuard {
     let action: ComplianceAction = "PASS";
     const reasons: string[] = [];
 
-    if (piiItems.some((p) => ["SSN", "CREDIT_CARD", "MY_NUMBER", "AWS_KEY", "PRIVATE_KEY"].includes(p.type))) {
+    if (piiItems.some((p) => ["SSN", "CREDIT_CARD", "MY_NUMBER", "AWS_KEY", "PRIVATE_KEY", "SEED_PHRASE", "WIF_KEY", "XPRV_KEY", "HEX_SECRET_64"].includes(p.type))) {
       action = "BLOCK";
       reasons.push(`output_pii_leak:${piiItems.map((p) => p.type).join(",")}`);
     } else if (piiItems.length > 0) {
       action = "WARN";
       reasons.push(`output_pii:${piiItems.map((p) => p.type).join(",")}`);
+    }
+
+    if (checkCanaryLeak(event.response)) {
+      action = "BLOCK";
+      reasons.push("canary_token_leaked");
+    }
+
+    const leakCheck = checkPromptLeakage(event.response);
+    if (leakCheck.leaked) {
+      action = escalate(action, "BLOCK");
+      reasons.push(`system_prompt_leak:${leakCheck.reason}`);
     }
 
     let remoteMs: number | undefined;
@@ -123,4 +135,9 @@ export class OutboundGuard {
     }
     return result;
   }
+}
+
+function escalate(current: ComplianceAction, incoming: ComplianceAction): ComplianceAction {
+  const order: ComplianceAction[] = ["PASS", "WARN", "FLAG", "BLOCK"];
+  return order.indexOf(incoming) > order.indexOf(current) ? incoming : current;
 }

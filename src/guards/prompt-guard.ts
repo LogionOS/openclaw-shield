@@ -2,6 +2,7 @@ import type { ShieldConfig, ComplianceDecision, ComplianceAction } from "../conf
 import type { AuditLogger } from "../audit/audit-logger.js";
 import { scanPII, scanBlocklist } from "../utils/pii-scanner.js";
 import { generateId } from "../utils/hash.js";
+import { registerSystemPrompt, generateCanary, getCanaryInstruction } from "../utils/canary.js";
 
 export interface PromptEvent {
   systemPrompt: string;
@@ -45,6 +46,9 @@ export class PromptGuard {
   async evaluate(event: PromptEvent): Promise<PromptResult> {
     const start = performance.now();
     const requestId = generateId();
+
+    registerSystemPrompt(event.systemPrompt);
+    generateCanary(event.sessionId);
 
     let action: ComplianceAction = "PASS";
     const reasons: string[] = [];
@@ -105,6 +109,7 @@ export class PromptGuard {
     if (!allowed) {
       sanitizedPrompt = event.systemPrompt;
     } else {
+      sanitizedPrompt = event.systemPrompt + getCanaryInstruction();
       if (allPII.length > 0 && event.contextFiles) {
         sanitizedContext = event.contextFiles.map((f) => this.redactSensitiveContent(f));
       }

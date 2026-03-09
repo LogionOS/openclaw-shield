@@ -159,6 +159,16 @@ export default function register(api: PluginAPI) {
         result.decision.matchedRules.length,
       );
 
+      const crescendo = shield!.sessions.checkCrescendo(String(ctx.sessionId ?? "unknown"));
+      if (crescendo.detected && result.allowed) {
+        api.logger.warn(`[LogionOS Shield] Crescendo attack detected: ${crescendo.reason}`);
+        return {
+          ...ctx,
+          blocked: true,
+          reply: "🛡️ LogionOS Shield: Suspicious pattern detected in this session. Further requests are blocked for security review.",
+        };
+      }
+
       if (!result.allowed) {
         return {
           ...ctx,

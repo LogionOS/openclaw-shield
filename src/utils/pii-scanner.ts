@@ -42,6 +42,17 @@ const BLOCKLIST_PATTERNS = [
     /bypass (?:your |the )?(?:safety|security|content) (?:filter|policy|rules)/i,
     /\[SYSTEM\]|\[INST\]|\<\|im_start\|/i,
   ]},
+  { category: "prompt_extraction", patterns: [
+    /(?:show|display|print|output|reveal|repeat|echo|dump)\s+(?:your |the |my )?(?:system|original|initial|full|complete|entire)?\s*(?:prompt|instructions|rules|guidelines|configuration|directives)/i,
+    /what (?:are|were|is) your (?:system |original |initial )?(?:prompt|instructions|rules|guidelines|directives)/i,
+    /(?:copy|paste|reproduce|recite|verbatim|word.for.word)\s+(?:your |the )?(?:instructions|prompt|rules|system message)/i,
+    /(?:tell|give|send) me (?:your |the )?(?:exact|full|complete|entire|original)\s+(?:prompt|instructions|system)/i,
+    /(?:begin|start)\s+(?:your |the )?(?:response|output|reply)\s+with\s+(?:your |the )?(?:system|original)\s+(?:prompt|instructions)/i,
+    /(?:translate|encode|convert)\s+(?:your |the )?(?:system |original )?(?:prompt|instructions)\s+(?:to|into|in)\s+/i,
+    /(?:summarize|paraphrase|rephrase)\s+(?:your |the )?(?:system |original )?(?:prompt|instructions|rules)/i,
+    /(?:ignore|forget).*(?:then|and|now)\s+(?:show|print|output|tell|give)\s+(?:your |the )?(?:prompt|instructions|rules)/i,
+    /(?:first|before)\s+(?:\d+ )?(?:words?|lines?|sentences?|characters?)\s+of\s+(?:your |the )?(?:prompt|instructions|system)/i,
+  ]},
   { category: "harmful_content", patterns: [
     /how to (?:make|create|build|synthesize) (?:a )?(?:bomb|explosive|weapon)/i,
     /how to (?:hack|breach|exploit|attack) (?:a |an )?(?:system|server|network|database)/i,
