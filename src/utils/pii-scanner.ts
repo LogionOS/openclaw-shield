@@ -22,6 +22,9 @@ const PII_PATTERNS: PIIPattern[] = [
   { type: "PRIVATE_KEY", pattern: /-----BEGIN (?:RSA |EC |DSA )?PRIVATE KEY-----/g, severity: "high" },
   { type: "PASSWORD", pattern: /(?:password|passwd|pwd)\s*[:=]\s*\S+/gi, severity: "high" },
   { type: "IP_ADDRESS", pattern: /\b(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\b/g, severity: "low" },
+  { type: "US_ADDRESS", pattern: /\b\d{1,5}\s+(?:[A-Z][a-z]+\s+){1,3}(?:St(?:reet)?|Ave(?:nue)?|Blvd|Boulevard|Dr(?:ive)?|Rd|Road|Ln|Lane|Way|Ct|Court|Pl(?:ace)?|Terr?(?:ace)?|Cir(?:cle)?|Pkwy|Hwy)\b/g, severity: "medium" },
+  { type: "SALARY", pattern: /(?:salary|compensation|income|wage|pay|earning)[s]?\s*(?:is|of|:)?\s*\$[\d,]+(?:\.\d{2})?/gi, severity: "medium" },
+  { type: "MONETARY_PII", pattern: /\$\d{2,3},\d{3}(?:,\d{3})*(?:\.\d{2})?\b/g, severity: "low" },
   // Crypto wallet and key patterns
   { type: "ETH_ADDRESS", pattern: /\b0x[a-fA-F0-9]{40}\b/g, severity: "high" },
   { type: "BTC_ADDRESS", pattern: /\b(?:bc1|[13])[a-zA-HJ-NP-Z0-9]{25,62}\b/g, severity: "high" },
@@ -120,6 +123,12 @@ export function maskValue(type: string, value: string): string {
   }
   if (type === "PHONE_US" || type === "PHONE_JP") {
     return `${"*".repeat(value.length - 4)}${value.slice(-4)}`;
+  }
+  if (type === "US_ADDRESS") {
+    return "[REDACTED ADDRESS]";
+  }
+  if (type === "SALARY" || type === "MONETARY_PII") {
+    return "$***,***";
   }
   if (type === "ETH_ADDRESS" || type === "BTC_ADDRESS" || type === "SOL_ADDRESS") {
     return `${value.slice(0, 6)}..${value.slice(-4)}`;
