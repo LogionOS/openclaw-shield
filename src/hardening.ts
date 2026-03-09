@@ -102,7 +102,7 @@ export function normalizeInput(text: string): string {
 function decodeObfuscatedContent(text: string): string {
   let result = text;
 
-  const b64Pattern = /(?:base64|b64|encoded)[\s:=]+([A-Za-z0-9+/]{20,}={0,2})/gi;
+  const b64Pattern = /(?:base64|b64|encoded)[\s:=]+([A-Za-z0-9+/]{8,}={0,2})/gi;
   result = result.replace(b64Pattern, (_match, b64) => {
     try {
       const decoded = Buffer.from(b64, "base64").toString("utf-8");
@@ -111,7 +111,7 @@ function decodeObfuscatedContent(text: string): string {
     return _match;
   });
 
-  const hexPattern = /(?:hex|0x)[\s:=]+([0-9a-fA-F]{20,})/gi;
+  const hexPattern = /(?:hex|0x)[\s:=]+([0-9a-fA-F]{8,})/gi;
   result = result.replace(hexPattern, (_match, hex) => {
     try {
       const decoded = Buffer.from(hex, "hex").toString("utf-8");

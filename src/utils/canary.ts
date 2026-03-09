@@ -55,7 +55,7 @@ export function checkPromptLeakage(output: string): { leaked: boolean; score: nu
   ];
 
   for (const pattern of suspiciousPatterns) {
-    if (pattern.test(output) && overlapRatio > 0.15) {
+    if (pattern.test(output) && overlapRatio >= 0.1) {
       return { leaked: true, score: overlapRatio + 0.3, reason: `prompt_structure_leak:${(overlapRatio * 100).toFixed(0)}%+pattern` };
     }
   }
