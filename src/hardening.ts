@@ -202,7 +202,7 @@ export function scrubForLog(obj: Record<string, unknown>): Record<string, unknow
     }
     if (key === "message" || key === "query" || key === "response") {
       const val = String(scrubbed[key] ?? "");
-      scrubbed[key] = val.length > 80 ? val.slice(0, 40) + "..." + val.slice(-20) : val;
+      scrubbed[key] = `[REDACTED len=${val.length}]`;
     }
   }
   return scrubbed;
