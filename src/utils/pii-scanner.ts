@@ -8,7 +8,7 @@ interface PIIPattern {
 }
 
 const PII_PATTERNS: PIIPattern[] = [
-  { type: "EMAIL", pattern: /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g, severity: "medium" },
+  { type: "EMAIL", pattern: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, severity: "medium" },
   { type: "PHONE_US", pattern: /(?:\+1[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/g, severity: "medium" },
   { type: "PHONE_JP", pattern: /(?:\+81[\s.-]?|0)\d{1,4}[\s.-]?\d{1,4}[\s.-]?\d{3,4}/g, severity: "medium" },
   { type: "SSN", pattern: /\b\d{3}[\s.-]\d{2}[\s.-]\d{4}\b/g, severity: "high" },
@@ -16,7 +16,7 @@ const PII_PATTERNS: PIIPattern[] = [
   { type: "CREDIT_CARD", pattern: /\b3[47]\d{2}[- ]?\d{6}[- ]?\d{5}\b/g, severity: "high" },
   { type: "CREDIT_CARD", pattern: /\b3[47]\d{2}[- ]?\d{4}[- ]?\d{4}[- ]?\d{3}\b/g, severity: "high" },
   { type: "MY_NUMBER", pattern: /\b\d{4}\s?\d{4}\s?\d{4}\b/g, severity: "high" },
-  { type: "API_KEY", pattern: /(?:sk|pk|api|key|token|bearer)[_\-][a-zA-Z0-9_\-]{20,}/gi, severity: "high" },
+  { type: "API_KEY", pattern: /(?:sk|pk|api|key|token|bearer)[_-][a-zA-Z0-9_-]{20,}/gi, severity: "high" },
   { type: "JWT", pattern: /eyJ[a-zA-Z0-9_-]+\.eyJ[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+/g, severity: "high" },
   { type: "AWS_KEY", pattern: /(?:AKIA|ABIA|ACCA|ASIA)[A-Z0-9]{16}/g, severity: "high" },
   { type: "PRIVATE_KEY", pattern: /-----BEGIN (?:RSA |EC |DSA )?PRIVATE KEY-----/g, severity: "high" },
@@ -45,7 +45,7 @@ const BLOCKLIST_PATTERNS = [
     /jailbreak/i,
     /DAN mode/i,
     /bypass (?:your |the )?(?:safety|security|content) (?:filter|policy|rules)/i,
-    /\[SYSTEM\]|\[INST\]|\<\|im_start\|/i,
+    /\[SYSTEM\]|\[INST\]|<\|im_start\|/i,
   ]},
   { category: "prompt_extraction", patterns: [
     /(?:show|display|print|output|reveal|repeat|echo|dump)\s+(?:me\s+)?(?:your |the |my )?(?:(?:full|complete|entire|exact)\s+)?(?:system|original|initial)?\s*(?:prompt|instructions|rules|guidelines|configuration|directives)/i,

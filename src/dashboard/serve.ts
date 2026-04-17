@@ -8,20 +8,20 @@ import {
   checkDashboardRate,
 } from "../hardening.js";
 
-type HttpRes = {
+export type HttpRes = {
   statusCode: number;
   end: (body: string) => void;
   setHeader: (k: string, v: string) => void;
 };
 
-type HttpReq = {
+export type HttpReq = {
   url?: string;
   method?: string;
   headers?: Record<string, string | string[] | undefined>;
   socket?: { remoteAddress?: string };
 };
 
-type RegisterFn = (route: {
+export type RegisterFn = (route: {
   path: string;
   auth: "gateway" | "plugin";
   match?: "exact" | "prefix";

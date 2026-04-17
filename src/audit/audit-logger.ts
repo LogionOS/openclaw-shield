@@ -1,5 +1,5 @@
-import { writeFile, appendFile, mkdir } from "node:fs/promises";
-import { join, dirname } from "node:path";
+import { appendFile, mkdir } from "node:fs/promises";
+import { join } from "node:path";
 import { homedir } from "node:os";
 import type { ShieldConfig, ComplianceDecision, AuditEntry } from "../config.js";
 import type { LogionOSClient } from "../client.js";

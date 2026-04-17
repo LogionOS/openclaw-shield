@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  quality:
+    name: Typecheck + Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install deps
+        run: npm ci --no-audit --no-fund
+
+      - name: TypeScript check
+        run: npm run typecheck
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: Vitest
+        # OpenClaw shield currently has no unit tests; keep the step so the
+        # job fails loudly the day we add some. Until then, exit 0 cleanly.
+        run: |
+          if compgen -G "src/**/*.test.ts" > /dev/null || compgen -G "tests/**/*.test.ts" > /dev/null; then
+            npm test
+          else
+            echo "::notice::No vitest tests found; skipping. Add some under src/**/*.test.ts."
+          fi

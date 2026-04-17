@@ -9,7 +9,7 @@ import { AuditLogger } from "./audit/audit-logger.js";
 import { SessionTracker } from "./audit/session-tracker.js";
 import { PolicySync } from "./policy/policy-sync.js";
 import { LocalCache } from "./policy/local-cache.js";
-import { registerDashboardRoutes } from "./dashboard/serve.js";
+import { registerDashboardRoutes, type HttpReq, type HttpRes } from "./dashboard/serve.js";
 import { heartbeat, isWatchdogHealthy, computeModuleHash, validateApiEndpoint } from "./hardening.js";
 
 interface PluginAPI {
@@ -31,7 +31,7 @@ interface PluginAPI {
     path: string;
     auth: "gateway" | "plugin";
     match?: "exact" | "prefix";
-    handler: (req: unknown, res: { statusCode: number; end: (body: string) => void; setHeader: (k: string, v: string) => void }) => Promise<boolean>;
+    handler: (req: HttpReq, res: HttpRes) => Promise<boolean>;
   }) => void;
   registerCommand: (cmd: {
     name: string;
@@ -406,7 +406,8 @@ function handleSessionsCommand(): { text: string } {
 // ── Config resolution ───────────────────────────────────────
 
 function resolveConfig(raw: Record<string, unknown>): ShieldConfig {
-  const pluginCfg = (raw as Record<string, Record<string, unknown>>)?.["@logionos/openclaw-shield"]?.config ?? raw;
+  const nested = (raw as Record<string, Record<string, Record<string, unknown>>>)?.["@logionos/openclaw-shield"]?.config;
+  const pluginCfg: Record<string, unknown> = nested ?? raw;
 
   return {
     apiEndpoint: String(pluginCfg.apiEndpoint ?? DEFAULT_CONFIG.apiEndpoint),

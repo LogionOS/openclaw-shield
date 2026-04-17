@@ -1,5 +1,5 @@
 import type { ShieldConfig, ComplianceAction, RiskLevel, MatchedRule, PIIItem } from "./config.js";
-import { validateApiEndpoint, requireTls, scrubForLog } from "./hardening.js";
+import { validateApiEndpoint, requireTls } from "./hardening.js";
 
 export interface CheckRequest {
   query: string;
@@ -144,7 +144,7 @@ export class LogionOSClient {
     for (let i = 0; i <= retries; i++) {
       try {
         return await this.check(req);
-      } catch (err) {
+      } catch {
         if (i === retries) return null;
         const delay = Math.min(100 * 2 ** i, 2000);
         await new Promise((r) => setTimeout(r, delay));
