@@ -294,7 +294,7 @@ def run_demo():
     pause()
 
     # --- 7: Audit Trail ---
-    demo_section("7. AUDIT TRAIL — every decision logged in tamper-proof chain")
+    demo_section("7. AUDIT TRAIL — every decision logged in tamper-evident, hash-chained record")
     print(f"\n  {C.WHITE}Every scan is logged in a SHA-256 hash chain:{C.RESET}\n")
     for entry in audit_chain:
         result_color = C.GREEN if entry["result"] == "PASS" else (C.YELLOW if entry["result"] == "WARN" else C.RED)
@@ -352,7 +352,7 @@ def run_demo():
   {C.GREEN}✓{C.RESET} Prompt injection defense (ClawJacked CVE-2026-25253)
   {C.GREEN}✓{C.RESET} Outbound scan — AI response leaks caught too
   {C.GREEN}✓{C.RESET} 6 jurisdictions (US, EU, Japan, UK, SG, HK)
-  {C.GREEN}✓{C.RESET} Tamper-proof audit trail
+  {C.GREEN}✓{C.RESET} Tamper-evident audit trail
   {C.GREEN}✓{C.RESET} <1ms per scan — users feel nothing
 
   {C.WHITE}{C.BOLD}One command to install:{C.RESET}
